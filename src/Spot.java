@@ -12,6 +12,9 @@ public class Spot {
 	private Spot previous;
 	private List<Spot> neighbours = new ArrayList<>();
 	private boolean wall = false;
+	private boolean open = false;
+	private boolean closed = false;
+	private boolean path = false;
 	
 	public Spot(int i, int j) {
 		this.i = i;
@@ -26,6 +29,30 @@ public class Spot {
 	
 	public void setWall(boolean b) {
 		wall = b;
+	}
+
+	public boolean isOpen() {
+		return open;
+	}
+
+	public void setOpen(boolean open) {
+		this.open = open;
+	}
+
+	public boolean isClosed() {
+		return closed;
+	}
+
+	public void setClosed(boolean closed) {
+		this.closed = closed;
+	}
+
+	public boolean isPath() {
+		return path;
+	}
+
+	public void setPath(boolean path) {
+		this.path = path;
 	}
 
 	public int getI() {
@@ -75,5 +102,4 @@ public class Spot {
 	public double getH() {
 		return h;
 	}
-	
 }

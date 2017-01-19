@@ -3,8 +3,11 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.JFrame;
 import javax.swing.Timer;
@@ -22,11 +25,12 @@ public class AStarAlgorithm implements ActionListener {
 	private static int rows = 50;
 	private static int[][] grid = new int[cols][rows];
 	private static Spot[][] spots = new Spot[cols][rows];
-	private static List<Spot> openSet = new LinkedList<>();
-	private static List<Spot> closedSet = new LinkedList<>();
+	private static Set<Spot> openSet = new HashSet<>(128);
+	private static Set<Spot> closedSet = new HashSet<>(cols * rows);
 	private static List<Spot> neighbours;
-	private static List<Spot> path;
-	static Timer timer;
+	private static Set<Spot> path = new HashSet<>(cols);
+	private static Timer timer;
+	private static long startTime = System.currentTimeMillis();
 	
 	// Start and end points
 	private static Spot start = new Spot(0, 0);
@@ -36,7 +40,7 @@ public class AStarAlgorithm implements ActionListener {
 	public AStarAlgorithm() {
 		// Window rendering
 		JFrame jframe = new JFrame();
-		timer = new Timer(20, this);				// Timer to refresh window eery 20ms.
+		timer = new Timer(1, this);				// Timer to refresh window eery 1ms.
 		
 		renderer = new Renderer();
 		jframe.add(renderer);
@@ -58,8 +62,10 @@ public class AStarAlgorithm implements ActionListener {
 		start.setWall(false);
 		end.setWall(false);
 		openSet.add(start);
+		start.setOpen(true);
 		addNeighbours();
 		timer.start();
+		
 	}
 	
 	private static double heuristic(Spot a, Spot b) {
@@ -84,6 +90,7 @@ public class AStarAlgorithm implements ActionListener {
 		}
 	}
 	
+	// Draw method
 	public static void repaint(Graphics g) {
 		// Background
 		g.setColor(Color.BLACK);
@@ -92,9 +99,13 @@ public class AStarAlgorithm implements ActionListener {
 		// Still searching?
 		if(openSet.size() > 0) {
 			
-			// Find lowest fScore in openSet
-			Spot winner = openSet.get(0);
-			for (Spot spot: openSet) {
+			// Find lowest fScore in openSet and set open			
+			Iterator<Spot> iterator = openSet.iterator();
+			Spot winner = new Spot(0,0);
+			winner.setF(Integer.MAX_VALUE);
+			while(iterator.hasNext()) {
+				Spot spot = iterator.next();
+				if (!spot.isOpen()) spot.setOpen(true);
 				if(spot.getF() < winner.getF()) {
 					winner = spot;
 				}
@@ -103,21 +114,30 @@ public class AStarAlgorithm implements ActionListener {
 			// If completed path
 			if (winner == end) {
 				System.out.println("Complete!");
+				System.out.println(System.currentTimeMillis() - startTime + " ms elapsed.");
 				timer.stop();
 			}
 			
-			// Find path
-			path = new LinkedList<>();
+			// Clear old path
+			for (Spot spot: path) {
+				spot.setPath(false);
+			}
+			// Find new path
+			path.clear();
 			Spot temp = winner;
 			path.add(temp);
+			temp.setPath(true);
 			while(temp.getPrevious() != null) {
 				path.add(temp.getPrevious());
+				temp.getPrevious().setPath(true);
 				temp = temp.getPrevious();
 			}
 			
 			// Update openSet and closedSet
 			openSet.remove(winner);
+			winner.setOpen(false);
 			closedSet.add(winner);
+			winner.setClosed(true);
 			
 			// Check neighbours
 			neighbours = winner.getNeighbours();
@@ -136,7 +156,7 @@ public class AStarAlgorithm implements ActionListener {
 					}
 					
 					neighbour.setH(heuristic(neighbour, end));
-					neighbour.setF(neighbour.getG() + neighbour.getH());
+					neighbour.setF(1 * neighbour.getG() + neighbour.getH());			// A weight can be added to this calculation that has a very large effect on the time taken at the expense of reliability that the path is the shortest.
 					neighbour.setPrevious(winner);
 				}
 				
@@ -152,33 +172,16 @@ public class AStarAlgorithm implements ActionListener {
 			for (Spot spot: spotArr) {
 				int x = spot.getI();
 				int y = spot.getJ();
+				// Set colour of spot to be drawn
+				g.setColor(Color.WHITE);
 				if (spot.isWall()) g.setColor(Color.BLACK);
-				else g.setColor(Color.WHITE);
+				if (spot.isClosed()) g.setColor(Color.RED);
+				if (spot.isOpen()) g.setColor(Color.GREEN);
+				if (spot.isPath()) g.setColor(Color.BLUE);
 				g.fillRect((x * (WIDTH / cols)) + 1, (y * (HEIGHT / rows)) + 1, (WIDTH / cols) - 2, (HEIGHT / rows) - 2);
 			}
 		}
 		
-		for (Spot spot: closedSet) {
-			g.setColor(Color.RED);
-			int x = spot.getI();
-			int y = spot.getJ();
-			g.fillRect((x * (WIDTH / cols)) + 1, (y * (HEIGHT / rows)) + 1, (WIDTH / cols) - 2, (HEIGHT / rows) - 2);
-		}
-		
-		for (Spot spot: openSet) {
-			g.setColor(Color.GREEN);
-			int x = spot.getI();
-			int y = spot.getJ();
-			g.fillRect((x * (WIDTH / cols)) + 1, (y * (HEIGHT / rows)) + 1, (WIDTH / cols) - 2, (HEIGHT / rows) - 2);
-		}
-		
-		for (Spot spot: path) {
-			g.setColor(Color.BLUE);
-			int x = spot.getI();
-			int y = spot.getJ();
-			g.fillRect((x * (WIDTH / cols)) + 1, (y * (HEIGHT / rows)) + 1, (WIDTH / cols) - 2, (HEIGHT / rows) - 2);
-		}
-
 	}
 	
 	public static void main(String[] args) {
