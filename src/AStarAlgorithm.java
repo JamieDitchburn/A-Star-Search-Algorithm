@@ -21,8 +21,8 @@ public class AStarAlgorithm implements ActionListener {
 	public Renderer renderer;
 	
 	// Algorithm
-	private static int cols = 50; 
-	private static int rows = 50;
+	private static int cols = 100; 
+	private static int rows = 100;
 	private static int[][] grid = new int[cols][rows];
 	private static Spot[][] spots = new Spot[cols][rows];
 	private static Set<Spot> openSet = new HashSet<>(128);
@@ -71,7 +71,7 @@ public class AStarAlgorithm implements ActionListener {
 	private static double heuristic(Spot a, Spot b) {
 		int x = b.getI() - a.getI();
 		int y = b.getJ() - a.getJ();
-		return Math.sqrt(x*x + y*y);
+		return x + y;
 	}
 	
 	// Add neighbours to each spot in spots
