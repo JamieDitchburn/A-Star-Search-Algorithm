@@ -71,6 +71,8 @@ public class AStarAlgorithm implements ActionListener {
 	private static double heuristic(Spot a, Spot b) {
 		int x = b.getI() - a.getI();
 		int y = b.getJ() - a.getJ();
+		if (x < 0) x = -x;
+		if (y < 0) y = -y;
 		return x + y;
 	}
 	
@@ -146,18 +148,23 @@ public class AStarAlgorithm implements ActionListener {
 				if (!closedSet.contains(neighbour) && !neighbour.isWall()) {
 					int tempG = winner.getG() + 1;
 					
+					boolean newPath = false;		// Only update spot from closed set if g is lower.
 					if (openSet.contains(neighbour)) {
 						if (tempG < neighbour.getG()) {
 							neighbour.setG(tempG);
+							newPath = true;
 						}
 					} else {
 						neighbour.setG(tempG);
+						newPath = true;
 						openSet.add(neighbour);
 					}
 					
-					neighbour.setH(heuristic(neighbour, end));
-					neighbour.setF(1 * neighbour.getG() + neighbour.getH());			// A weight can be added to this calculation that has a very large effect on the time taken at the expense of reliability that the path is the shortest.
-					neighbour.setPrevious(winner);
+					if (newPath) {
+						neighbour.setH(heuristic(neighbour, end));
+						neighbour.setF(1 * neighbour.getG() + neighbour.getH());			// A weight can be added to this calculation that has a very large effect on the time taken at the expense of reliability that the path is the shortest.
+						neighbour.setPrevious(winner);
+					}
 				}
 				
 			}
