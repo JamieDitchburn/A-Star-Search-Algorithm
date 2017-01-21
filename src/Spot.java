@@ -1,7 +1,8 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
+// Each square in the grid is represented by a Spot object.
 public class Spot {
 
 	// Properties of cell
@@ -10,7 +11,7 @@ public class Spot {
 	private double f = 0;
 	private double h = 0;
 	private Spot previous;
-	private List<Spot> neighbours = new ArrayList<>();
+	private Set<Spot> neighbours = new HashSet<>();
 	private boolean wall = false;
 	private boolean open = false;
 	private boolean closed = false;
@@ -63,11 +64,11 @@ public class Spot {
 		return j;
 	}
 	
-	public void setNeighbours(List neighbours) {
+	public void setNeighbours(Set<Spot> neighbours) {
 		this.neighbours = neighbours;
 	}
 	
-	public List<Spot> getNeighbours() {
+	public Set<Spot> getNeighbours() {
 		return neighbours;
 	}
 
