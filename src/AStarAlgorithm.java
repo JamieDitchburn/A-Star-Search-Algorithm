@@ -36,7 +36,7 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 	public AStarAlgorithm() {
 		// Window rendering
 		JFrame jframe = new JFrame();
-		timer = new Timer(20, this);				// Timer to refresh window eery 1ms.
+		timer = new Timer(20, this);				// Timer to refresh window every 1ms.
 		renderer = new Renderer();
 		jframe.add(renderer);
 		jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -55,8 +55,7 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 		spots[end.getI()][end.getJ()] = end;
 		start.setWall(false);
 		end.setWall(false);
-		openSet.add(start);
-		start.setOpen(true);
+		setOpen(start, true);
 		addNeighbours();
 		timer.start();
 		
@@ -92,6 +91,11 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 			
+		drawGrid(g);
+		
+	}
+
+	private void drawGrid(Graphics g) {
 		// Draw and colour grid squares
 		for (Spot[] spotArr: spots) {
 			for (Spot spot: spotArr) {
@@ -100,13 +104,12 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 				// Set colour of spot to be drawn
 				g.setColor(Color.WHITE);
 				if (spot.isWall()) g.setColor(Color.BLACK);
-				else if (spot.isPath()) g.setColor(Color.BLUE);
-				else if (spot.isOpen()) g.setColor(Color.GREEN);
-				else if (spot.isClosed()) g.setColor(Color.RED);
+				else if (spot.isPath()) g.setColor(Color.GREEN);
+				else if (spot.isOpen()) g.setColor(Color.LIGHT_GRAY);
+				else if (spot.isClosed()) g.setColor(Color.GRAY);
 				g.fillRect((x * (WIDTH / cols)) + 1, (y * (HEIGHT / rows)) + 1, (WIDTH / cols) - 1, (HEIGHT / rows) - 1);
 			}
 		}
-		
 	}
 	
 	public static void main(String[] args) {
@@ -126,66 +129,26 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 		// Still searching?
 		while(openSet.size() > 0) {
 			
-			// Find lowest fScore in openSet and set open			
-			Iterator<Spot> iterator = openSet.iterator();
-			Spot winner = new Spot(0,0);
-			winner.setF(Integer.MAX_VALUE);
-			while(iterator.hasNext()) {
-				Spot spot = iterator.next();
-				if (!spot.isOpen()) spot.setOpen(true);
-				if(spot.getF() < winner.getF()) {
-					winner = spot;
-				}
-			}
-
-			// Clear old path
-			for (Spot spot: path) {
-				spot.setPath(false);
-			}
-			// Find new path
-			path.clear();
-			Spot temp = winner;
-			path.add(temp);
-			temp.setPath(true);
-			while(temp.getPrevious() != null) {
-				path.add(temp.getPrevious());
-				temp.getPrevious().setPath(true);
-				temp = temp.getPrevious();
-			}
+			Spot winner = getWinner();		// Best option for next position to be evaluated
+			setPath(winner);
 
 			// If completed path
 			if (winner == end) {
-				System.out.println("Complete!");
-				System.out.println(System.currentTimeMillis() - startTime + " ms elapsed.");
-				System.out.println(path.size());
+				completeAlgorithm();
 				break;
-				
 			}
 
 			// Update openSet and closedSet
-			openSet.remove(winner);
-			winner.setOpen(false);
-			closedSet.add(winner);
-			winner.setClosed(true);
+			setOpen(winner, false);
+			setClosed(winner, true);
 
 			// Check neighbours
 			neighbours = winner.getNeighbours();
 			for (Spot neighbour: neighbours) {
 
 				if (!closedSet.contains(neighbour) && !neighbour.isWall()) {
-					int tempG = winner.getG() + 1;
-
-					boolean newPath = false;		// Only update spot from closed set if g is lower.
-					if (openSet.contains(neighbour)) {
-						if (tempG < neighbour.getG()) {
-							neighbour.setG(tempG);
-							newPath = true;
-						}
-					} else {
-						neighbour.setG(tempG);
-						newPath = true;
-						openSet.add(neighbour);
-					}
+					
+					boolean newPath = addNeighbourToPath(winner, neighbour);
 
 					if (newPath) {
 						neighbour.setH(heuristic(neighbour, end));
@@ -196,6 +159,76 @@ public class AStarAlgorithm implements ActionListener, Runnable {
 
 			}
 		}
+		if (openSet.size() == 0) System.out.println("No possible solution.");
+	}
+
+	private boolean addNeighbourToPath(Spot winner, Spot neighbour) {
+		int tempG = winner.getG() + 1;
+		boolean newPath = false;		// Only update spot from closed set if g is lower.
+		if (openSet.contains(neighbour)) {
+			if (tempG < neighbour.getG()) {
+				neighbour.setG(tempG);
+				newPath = true;
+			}
+		} else {
+			neighbour.setG(tempG);
+			newPath = true;
+			setOpen(neighbour, true);
+		}
+		return newPath;
+	}
+
+	private void completeAlgorithm() {
+		System.out.println("Complete!");
+		System.out.println(System.currentTimeMillis() - startTime + " ms elapsed.");
+		System.out.println(path.size());
+	}
+
+	private void setPath(Spot winner) {
+		// Clear old path
+		for (Spot spot: path) {
+			spot.setPath(false);
+		}
+		
+		// Find new path
+		path.clear();
+		Spot temp = winner;
+		path.add(temp);
+		temp.setPath(true);
+		while(temp.getPrevious() != null) {
+			path.add(temp.getPrevious());
+			temp.getPrevious().setPath(true);
+			temp = temp.getPrevious();
+		}
+	}
+
+	private Spot getWinner() {
+		// Find lowest fScore in openSet and set open
+		Iterator<Spot> iterator = openSet.iterator();
+		Spot winner = new Spot(0,0);
+		winner.setF(Integer.MAX_VALUE);
+		while(iterator.hasNext()) {
+			Spot spot = iterator.next();
+			if (!spot.isOpen()) spot.setOpen(true);
+			if(spot.getF() < winner.getF()) {
+				winner = spot;
+			}
+		}
+		return winner;
+	}
+	
+	private static void setOpen(Spot spot, boolean isOpen) {
+		if (isOpen) openSet.add(spot);
+		else openSet.remove(spot);
+		
+		spot.setOpen(isOpen);
+	}
+	
+	private static void setClosed(Spot spot, boolean isClosed) {
+		if (isClosed) closedSet.add(spot);
+		else closedSet.remove(spot);
+		
+		spot.setClosed(isClosed);
 	}
 
 }
